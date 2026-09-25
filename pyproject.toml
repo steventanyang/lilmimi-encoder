@@ -6,3 +6,9 @@ dependencies = [
     "numpy>=2.5.3",
     "torch>=2.14.0",
 ]
+
+[dependency-groups]
+dev = [
+    "huggingface-hub>=2.0.0",
+    "safetensors>=0.8.0",
+]
