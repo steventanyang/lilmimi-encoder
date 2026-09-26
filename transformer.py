@@ -212,22 +212,3 @@ class MimiTransformer(nn.Module):
             x = layer(x)
 
         return x.transpose(1, 2)
-
-
-def remap_mimi_keys(state: dict) -> dict:
-    renames = {
-        ".norm1.": ".ln1.",
-        ".norm2.": ".ln2.",
-        ".self_attn.": ".attn.",
-        ".linear1.": ".mlp.up.",
-        ".linear2.": ".mlp.down.",
-    }
-
-    remapped = {}
-
-    for key, value in state.items():
-        for old, new in renames.items():
-            key = key.replace(old, new)
-        remapped[key] = value
-
-    return remapped
