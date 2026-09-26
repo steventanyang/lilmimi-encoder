@@ -9,6 +9,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "einops>=0.8.2",
     "huggingface-hub>=2.0.0",
     "safetensors>=0.8.0",
 ]
