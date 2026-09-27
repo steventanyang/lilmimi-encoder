@@ -5,7 +5,9 @@ from torch import nn
 from downsample import ConvDownsample
 from quantizer import SplitResidualVectorEncoder
 from seanet import SimpleSEANetEncoder
+from seanet_decoder import SimpleSEANetDecoder
 from transformer import MimiTransformer
+from upsample import ConvUpsample
 
 
 class MimiEncoder(nn.Module):
@@ -46,3 +48,35 @@ class MimiEncoder(nn.Module):
         latents = self.downsample(latents)
 
         return self.quantizer.encode(latents, num_codebooks=num_codebooks)
+
+
+class MimiDecoder(nn.Module):
+    """
+    Moshi's audio tokens back to a waveform.
+
+    Every stage undoes one of the encoder's, in reverse order.
+    """
+
+    def __init__(self, use_weight_norm: bool = False):
+        super().__init__()
+
+        self.quantizer = SplitResidualVectorEncoder()
+        self.upsample = ConvUpsample()
+        self.transformer = MimiTransformer()
+        self.seanet = SimpleSEANetDecoder(use_weight_norm=use_weight_norm)
+
+    def forward(self, codes: torch.Tensor) -> torch.Tensor:
+        """
+        codes: [B, K, T]
+        returns: [B, 1, T * 1920] at 24 kHz
+        """
+        # [B, K, T] -> [B, 512, T], still 12.5 Hz
+        latents = self.quantizer.decode(codes)
+
+        # 12.5 Hz -> 25 Hz
+        latents = self.upsample(latents)
+
+        latents = self.transformer(latents)
+
+        # [B, 512, T] -> [B, 1, T * 960]
+        return self.seanet(latents)
