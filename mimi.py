@@ -2,12 +2,11 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from downsample import ConvDownsample
 from quantizer import SplitResidualVectorEncoder
+from resample import ConvDownsample, ConvUpsample
 from seanet import SimpleSEANetEncoder
 from seanet_decoder import SimpleSEANetDecoder
 from transformer import MimiTransformer
-from upsample import ConvUpsample
 
 
 class MimiEncoder(nn.Module):
