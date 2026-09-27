@@ -77,14 +77,12 @@ def to_simple_encoder_key(mimi_key):
 
 def to_simple_quantizer_state(mimi_state):
     # "rvq_rest.vq.layers.3._codebook.embedding_sum" -> "acoustic_encoder.codebooks.3.embedding_sum"
-    # output_proj is only used on the decode side, which we don't have
     return {
         key.replace("rvq_first.", "semantic_encoder.")
         .replace("rvq_rest.", "acoustic_encoder.")
         .replace(".vq.layers.", ".codebooks.")
         .replace("._codebook.", "."): value
         for key, value in mimi_state.items()
-        if ".output_proj." not in key
     }
 
 
