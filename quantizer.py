@@ -91,6 +91,13 @@ class ResidualVectorEncoder(nn.Module):
             bias=False,
         )
 
+        self.output_proj = nn.Conv1d(
+            dimension,
+            input_dimension,
+            kernel_size=1,
+            bias=False,
+        )
+
         self.codebooks = nn.ModuleList(
             [
                 Codebook(
@@ -143,6 +150,22 @@ class ResidualVectorEncoder(nn.Module):
             residual = residual - selected_centroids
 
         return torch.stack(all_codes, dim=1)
+
+    def decode(self, codes: torch.Tensor) -> torch.Tensor:
+        """
+        codes: [B, n_q, T]
+        returns: [B, input_dimension, T]
+        """
+        quantized = None
+
+        for level, codebook in enumerate(self.codebooks[: codes.shape[1]]):
+            # [B, T] -> [B, T, D] -> [B, D, T]
+            centroids = codebook.decode(codes[:, level])
+            centroids = centroids.transpose(1, 2)
+
+            quantized = centroids if quantized is None else quantized + centroids
+
+        return self.output_proj(quantized)
 
 
 class SplitResidualVectorEncoder(nn.Module):
@@ -207,3 +230,17 @@ class SplitResidualVectorEncoder(nn.Module):
             [semantic_codes, acoustic_codes],
             dim=1,
         )
+
+    def decode(self, codes: torch.Tensor) -> torch.Tensor:
+        """
+        codes: [B, K, T]
+        returns: [B, 512, T]
+        """
+        quantized = self.semantic_encoder.decode(codes[:, : self.n_q_semantic])
+
+        if codes.shape[1] > self.n_q_semantic:
+            quantized = quantized + self.acoustic_encoder.decode(
+                codes[:, self.n_q_semantic :]
+            )
+
+        return quantized
