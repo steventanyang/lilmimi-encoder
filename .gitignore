@@ -1,3 +1,20 @@
+# environment
 .venv/
 __pycache__/
 *.pyc
+
+# audio written by mic.py
+out/
+
+# benchmark results: machine-specific, and appended to on every run
+bench.json
+
+# large artifacts, in case any land here
+*.wav
+*.safetensors
+*.pt
+*.onnx
+*.mlpackage
+
+# macOS
+.DS_Store
