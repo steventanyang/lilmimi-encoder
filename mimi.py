@@ -3,14 +3,13 @@ import torch.nn.functional as F
 from torch import nn
 
 from quantizer import SplitResidualVectorEncoder
-from streaming import StreamingModule
 from resample import ConvDownsample, ConvUpsample
 from seanet import SimpleSEANetEncoder
 from seanet_decoder import SimpleSEANetDecoder
 from transformer import MimiTransformer
 
 
-class MimiEncoder(StreamingModule):
+class MimiEncoder(nn.Module):
     """
     Waveform to Moshi's audio tokens.
     """
@@ -37,12 +36,10 @@ class MimiEncoder(StreamingModule):
         returns: [B, num_codebooks, samples / 1920]
         For Moshi: 8 codebooks at 12.5 Hz.
         """
-        if not self.streaming:
-            # A trailing partial frame would be dropped by the downsample,
-            # so offline it is padded out. Mid-stream the same padding would
-            # splice silence in, so chunks are taken as they arrive.
-            remainder = -waveform.shape[-1] % self.frame_size
-            waveform = F.pad(waveform, (0, remainder))
+        # A trailing partial frame would be dropped by the downsample,
+        # so it is padded out to a whole one.
+        remainder = -waveform.shape[-1] % self.frame_size
+        waveform = F.pad(waveform, (0, remainder))
 
         # [B, 1, S] -> [B, 512, S / 960], i.e. 25 Hz
         latents = self.seanet(waveform)
@@ -54,7 +51,7 @@ class MimiEncoder(StreamingModule):
         return self.quantizer.encode(latents, num_codebooks=num_codebooks)
 
 
-class MimiDecoder(StreamingModule):
+class MimiDecoder(nn.Module):
     """
     Moshi's audio tokens back to a waveform.
 

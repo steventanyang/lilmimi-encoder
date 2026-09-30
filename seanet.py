@@ -4,10 +4,9 @@ import torch.nn.functional as F
 from torch import nn
 
 from conv import CausalConv1d, ResidualBlock
-from streaming import StreamingModule
 
 
-class SimpleSEANetEncoder(StreamingModule):
+class SimpleSEANetEncoder(nn.Module):
     strides = (4, 5, 6, 8)
     hop_length = math.prod(strides)
 
@@ -42,11 +41,9 @@ class SimpleSEANetEncoder(StreamingModule):
         )
 
     def forward(self, waveform):
-        if not self.streaming:
-            # Offline, a trailing partial frame is padded out rather than
-            # dropped. Mid-stream that would splice silence into the signal,
-            # so a streamed chunk is passed through as it arrives.
-            extra = -waveform.shape[-1] % self.hop_length
-            waveform = F.pad(waveform, (0, extra))
+        # A trailing partial frame would be dropped by the downsampling
+        # rather than contributing, so it is padded out to a whole one.
+        extra = -waveform.shape[-1] % self.hop_length
+        waveform = F.pad(waveform, (0, extra))
 
         return self.network(waveform)
